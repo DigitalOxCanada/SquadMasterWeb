@@ -1,0 +1,43 @@
+@page "/"
+@rendermode InteractiveServer
+@inject GameStateService GameState
+@inject NavigationManager Nav
+
+<PageTitle>SquadMaster Web</PageTitle>
+
+<div class="home-hero">
+    <div class="home-panel">
+        <img class="home-logo" src="/assets/AppHeaderLogo.png" alt="SquadMaster" />
+        <h1>SquadMaster Web</h1>
+        <p class="lead">
+            Build and manage your HeroScape army in the browser — the web version of
+            <a href="https://github.com/DigitalOxCanada/SquadMaster10" target="_blank" rel="noopener">SquadMaster10</a>.
+        </p>
+
+        @if (GameState.HasArmy)
+        {
+            <div class="home-actions">
+                <button class="btn btn-primary btn-lg" @onclick="ContinueGame">Continue game</button>
+                <button class="btn btn-dark btn-lg" @onclick="NewGame">Start new army</button>
+            </div>
+            <p class="muted">Current army: @GameState.Army.Count units · @GameState.CurrentPoints / @GameState.TotalPoints points remaining</p>
+        }
+        else
+        {
+            <div class="home-actions">
+                <button class="btn btn-primary btn-lg" @onclick="BuildArmy">Build army now!</button>
+            </div>
+            <p class="muted">You have no army yet. Pick units and track damage through each round.</p>
+        }
+    </div>
+</div>
+
+@code {
+    private void BuildArmy() => Nav.NavigateTo("/builder");
+    private void ContinueGame() => Nav.NavigateTo("/game");
+    private void NewGame()
+    {
+        GameState.StartNewGame();
+        Nav.NavigateTo("/builder");
+    }
+}

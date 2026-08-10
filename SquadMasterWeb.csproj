@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Local clone of SquadMaster10 for reference only — do not compile. -->
+    <Compile Remove="_reference/**" />
+    <Content Remove="_reference/**" />
+    <None Remove="_reference/**" />
+    <EmbeddedResource Remove="_reference/**" />
+  </ItemGroup>
+
+</Project>

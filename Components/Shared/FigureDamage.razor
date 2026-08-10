@@ -1,0 +1,26 @@
+@* One figure with hit/heal controls and damage chits. *@
+<div class="figure-card @(Figure.IsAlive ? "alive" : "dead")" style="--figure-h: @(Figure.DisplayHeight)px">
+    <img class="figure-img" src="@Figure.ImageUrl" alt="Figure @Figure.Index" loading="lazy"
+         onerror="@($"this.src='/assets/Cards/{CardEntryId}.png'; this.onerror=null;")" />
+    <div class="figure-controls">
+        <button type="button" class="btn-hit" @onclick="Hit" disabled="@(!Figure.IsAlive)">Hit +1</button>
+        <button type="button" class="btn-heal" @onclick="Heal" disabled="@(Figure.DamageTaken == 0)">Heal −1</button>
+    </div>
+    <div class="damage-chits" aria-label="@Figure.DamageTaken damage">
+        @for (var i = 0; i < Figure.DamageTaken; i++)
+        {
+            <span class="chit" title="Damage"></span>
+        }
+    </div>
+    <div class="figure-life">@Figure.LifeRemaining / @Figure.MaxLife life</div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ArmyFigure Figure { get; set; } = default!;
+    [Parameter] public string CardEntryId { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnHit { get; set; }
+    [Parameter] public EventCallback OnHeal { get; set; }
+
+    private Task Hit() => OnHit.InvokeAsync();
+    private Task Heal() => OnHeal.InvokeAsync();
+}

@@ -1,0 +1,44 @@
+@* Full unit card view with figure damage trackers. *@
+<div class="unit-card">
+    <div class="unit-card-header">
+        <h1 class="unit-title">@Card.Hero.Name</h1>
+        <span class="unit-page">@PageLabel</span>
+    </div>
+    <div class="unit-card-body">
+        <div class="unit-art">
+            <div @key="Card.InstanceId"
+                 class="card-tilt unit-art-tilt card-tilt-enter"
+                 data-card-tilt
+                 data-tilt-max="14"
+                 data-tilt-rest-rx="4"
+                 data-tilt-rest-ry="-6">
+                <div class="card-tilt-face">
+                    <img src="@Card.Hero.Image" alt="@Card.Hero.Name" />
+                    <div class="card-tilt-glare" aria-hidden="true"></div>
+                </div>
+            </div>
+            <div class="unit-stats-badge">
+                <span>@Card.Hero.Points PTS</span>
+                <span>@Card.Hero.StatsLine</span>
+                <span>@Card.Hero.Species · @Card.Hero.Size</span>
+            </div>
+        </div>
+        <div class="unit-figures">
+            @foreach (var figure in Card.Figures)
+            {
+                var fig = figure;
+                <FigureDamage Figure="fig"
+                              CardEntryId="@Card.Hero.EntryId"
+                              OnHit="() => OnHit.InvokeAsync(fig.Index)"
+                              OnHeal="() => OnHeal.InvokeAsync(fig.Index)" />
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ArmyCard Card { get; set; } = default!;
+    [Parameter] public string PageLabel { get; set; } = string.Empty;
+    [Parameter] public EventCallback<int> OnHit { get; set; }
+    [Parameter] public EventCallback<int> OnHeal { get; set; }
+}

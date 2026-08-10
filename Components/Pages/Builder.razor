@@ -1,0 +1,139 @@
+@page "/builder"
+@rendermode InteractiveServer
+@implements IDisposable
+@inject HeroDataService Data
+@inject GameStateService GameState
+@inject NavigationManager Nav
+
+<PageTitle>Build Army · SquadMaster</PageTitle>
+
+@if (!_ready)
+{
+    <div class="loading-state">Loading HeroScape catalog…</div>
+}
+else
+{
+    <div class="builder-page">
+        <header class="builder-header">
+            <div class="filters">
+                <label>
+                    <span>Species</span>
+                    <select class="form-select" @bind="_species" @bind:after="ApplyFilter">
+                        <option value="All">All</option>
+                        @foreach (var s in _speciesOptions)
+                        {
+                            <option value="@s.Species">@s.Species (@s.Count)</option>
+                        }
+                    </select>
+                </label>
+                <label>
+                    <span>Points</span>
+                    <select class="form-select" @bind="_pointsBand" @bind:after="ApplyFilter">
+                        <option value="1-1000">All</option>
+                        <option value="1-100">1–100</option>
+                        <option value="101-200">101–200</option>
+                        <option value="201-1000">200+</option>
+                    </select>
+                </label>
+            </div>
+            <div class="draft-points">@GameState.DraftPoints POINTS</div>
+        </header>
+
+        <div class="builder-layout">
+            <section class="catalog-panel">
+                <h2>Select units <small>(@(_filtered.Count) shown)</small></h2>
+                <div class="catalog-grid @(_atLimit ? "disabled" : "")">
+                    @foreach (var hero in _filtered)
+                    {
+                        var h = hero;
+                        <CardMiniView Hero="h" OnClick="() => Add(h)" CssClass="@(_atLimit ? "disabled" : "")" />
+                    }
+                </div>
+                @if (_atLimit)
+                {
+                    <p class="limit-note">Army limit of @GameState.Settings.MaxArmyUnits units reached.</p>
+                }
+            </section>
+
+            <aside class="draft-panel">
+                <h2>Your squad</h2>
+                @if (GameState.DraftArmy.Count == 0)
+                {
+                    <p class="empty-draft">Click units on the left to add them.</p>
+                }
+                else
+                {
+                    <div class="draft-list">
+                        @for (var i = 0; i < GameState.DraftArmy.Count; i++)
+                        {
+                            var index = i;
+                            var hero = GameState.DraftArmy[i];
+                            <CardMiniView Hero="hero" OnClick="() => Remove(index)" CssClass="in-draft" />
+                        }
+                    </div>
+                }
+                <div class="draft-actions">
+                    <button class="btn btn-success" disabled="@(GameState.DraftArmy.Count == 0)" @onclick="Build">
+                        Build Squad
+                    </button>
+                    <button class="btn btn-outline-light" disabled="@(GameState.DraftArmy.Count == 0)" @onclick="Clear">
+                        Clear
+                    </button>
+                </div>
+            </aside>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _ready;
+    private bool _atLimit;
+    private string _species = "All";
+    private string _pointsBand = "1-1000";
+    private List<HeroUnit> _filtered = [];
+    private IReadOnlyList<(string Species, int Count)> _speciesOptions = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Data.EnsureLoadedAsync();
+        _speciesOptions = Data.GetSpeciesOptions();
+        ApplyFilter();
+        _ready = true;
+        GameState.Changed += OnGameChanged;
+    }
+
+    private void OnGameChanged()
+    {
+        _atLimit = GameState.DraftArmy.Count >= GameState.Settings.MaxArmyUnits;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void ApplyFilter()
+    {
+        var parts = _pointsBand.Split('-');
+        var min = int.Parse(parts[0]);
+        var max = int.Parse(parts[1]);
+        _filtered = Data.Filter(_species, min, max).ToList();
+        _atLimit = GameState.DraftArmy.Count >= GameState.Settings.MaxArmyUnits;
+    }
+
+    private void Add(HeroUnit hero)
+    {
+        if (_atLimit) return;
+        GameState.AddToDraft(hero);
+    }
+
+    private void Remove(int index) => GameState.RemoveFromDraft(index);
+
+    private void Clear() => GameState.ClearDraft();
+
+    private void Build()
+    {
+        if (GameState.BuildArmyFromDraft())
+        {
+            Nav.NavigateTo("/game");
+        }
+    }
+
+    public void Dispose() => GameState.Changed -= OnGameChanged;
+}

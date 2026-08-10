@@ -1,0 +1,34 @@
+@* Top strip of unit badges + game icon for jump navigation. *@
+<nav class="army-map" aria-label="Army navigation">
+    <div class="army-map-score">@CurrentPoints / @TotalPoints</div>
+    <div class="army-map-items">
+        @for (var i = 0; i < Army.Count; i++)
+        {
+            var index = i;
+            var card = Army[i];
+            <button type="button"
+                    class="map-item @(SelectedIndex == index ? "active" : "") @(!card.IsAlive ? "defeated" : "")"
+                    title="@card.Hero.Name"
+                    @onclick="() => Select.InvokeAsync(index)">
+                <img src="@card.Hero.Badge" alt="@card.Hero.Name" />
+            </button>
+        }
+        @if (Army.Count > 0)
+        {
+            <button type="button"
+                    class="map-item game @(SelectedIndex == Army.Count ? "active" : "")"
+                    title="Game panel"
+                    @onclick="() => Select.InvokeAsync(Army.Count)">
+                <img src="/assets/mapicon.png" alt="Game" />
+            </button>
+        }
+    </div>
+</nav>
+
+@code {
+    [Parameter] public IReadOnlyList<ArmyCard> Army { get; set; } = [];
+    [Parameter] public int SelectedIndex { get; set; }
+    [Parameter] public int CurrentPoints { get; set; }
+    [Parameter] public int TotalPoints { get; set; }
+    [Parameter] public EventCallback<int> Select { get; set; }
+}

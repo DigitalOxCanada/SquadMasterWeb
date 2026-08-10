@@ -1,0 +1,167 @@
+@page "/game"
+@rendermode InteractiveServer
+@implements IDisposable
+@inject HeroDataService Data
+@inject GameStateService GameState
+@inject NavigationManager Nav
+@inject IJSRuntime Js
+
+<PageTitle>Game · SquadMaster</PageTitle>
+
+@if (!_ready)
+{
+    <div class="loading-state">Loading…</div>
+}
+else if (!GameState.HasArmy)
+{
+    <div class="empty-army">
+        <h1>You have no army!</h1>
+        <p>Build a squad first, then track damage and rounds here.</p>
+        <button class="btn btn-primary btn-lg" @onclick="GoBuilder">Build army now!</button>
+    </div>
+}
+else
+{
+    <div class="game-page">
+        <header class="game-toolbar">
+            <div class="toolbar-left">
+                <img class="toolbar-logo" src="/assets/AppHeaderLogo.png" alt="SquadMaster" />
+            </div>
+            <div class="toolbar-actions">
+                @if (!GameState.ShowingGamePanel)
+                {
+                    <button class="btn btn-sm btn-outline-light" disabled="@(!CanMoveLeft)" @onclick="MoveLeft" title="Move unit left">◀ Move left</button>
+                    <button class="btn btn-sm btn-outline-light" disabled="@(!CanMoveRight)" @onclick="MoveRight" title="Move unit right">Move right ▶</button>
+                    <button class="btn btn-sm btn-outline-danger" disabled="@(!CanDelete)" @onclick="DeleteUnit" title="Remove this unit">Delete unit</button>
+                }
+                <button class="btn btn-sm btn-outline-warning" @onclick="ConfirmNewGame">New game</button>
+                <button class="btn btn-sm btn-outline-light" @onclick="() => _showSettings = !_showSettings">Settings</button>
+                <a class="btn btn-sm btn-outline-light" href="https://digitalox.ca" target="_blank" rel="noopener">Help</a>
+            </div>
+        </header>
+
+        @if (_showSettings)
+        {
+            <div class="settings-flyout">
+                <label>
+                    Total rounds
+                    <select class="form-select form-select-sm" value="@GameState.Settings.TotalRounds" @onchange="OnRoundsChanged">
+                        @for (var r = 1; r <= 20; r++)
+                        {
+                            <option value="@r">@r</option>
+                        }
+                    </select>
+                </label>
+                <label class="form-check">
+                    <input type="checkbox" class="form-check-input" checked="@GameState.Settings.ShowRounds" @onchange="OnShowRoundsChanged" />
+                    Show round tracker
+                </label>
+                <button class="btn btn-sm btn-secondary" @onclick="() => _showSettings = false">Close</button>
+            </div>
+        }
+
+        <ArmyMapNav Army="GameState.Army"
+                    SelectedIndex="GameState.SelectedIndex"
+                    CurrentPoints="GameState.CurrentPoints"
+                    TotalPoints="GameState.TotalPoints"
+                    Select="Select" />
+
+        <main class="game-stage">
+            @if (GameState.ShowingGamePanel)
+            {
+                <GamePanel Glyphs="Data.Glyphs"
+                           ShowRounds="GameState.Settings.ShowRounds"
+                           TotalRounds="GameState.Settings.TotalRounds"
+                           CurrentRound="GameState.Settings.CurrentRound"
+                           CurrentPoints="GameState.CurrentPoints"
+                           TotalPoints="GameState.TotalPoints"
+                           OnRound="SetRound" />
+            }
+            else if (GameState.SelectedCard is { } card)
+            {
+                <UnitCardView Card="card"
+                              PageLabel="@($"{GameState.SelectedIndex + 1}/{GameState.Army.Count}")"
+                              OnHit="Hit"
+                              OnHeal="Heal" />
+            }
+        </main>
+
+        <footer class="copyright-bar">
+            Card images and card text copyright ©2008 Hasbro, Inc. Heroscape and its associated logos and character names are trademarks of Hasbro, Inc.
+        </footer>
+    </div>
+}
+
+@code {
+    private bool _ready;
+    private bool _showSettings;
+
+    private bool CanMoveLeft => GameState.SelectedIndex > 0 && !GameState.ShowingGamePanel && GameState.Army.Count > 1;
+    private bool CanMoveRight => GameState.SelectedIndex < GameState.Army.Count - 1 && !GameState.ShowingGamePanel && GameState.Army.Count > 1;
+    private bool CanDelete => GameState.Army.Count > 1 && !GameState.ShowingGamePanel;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Data.EnsureLoadedAsync();
+        GameState.Changed += OnChanged;
+        _ready = true;
+    }
+
+    private void OnChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private void GoBuilder() => Nav.NavigateTo("/builder");
+    private void Select(int index) => GameState.SelectIndex(index);
+    private void MoveLeft() => GameState.MoveSelectedLeft();
+    private void MoveRight() => GameState.MoveSelectedRight();
+    private void SetRound(int round) => GameState.SetRound(round);
+
+    private void Hit(int figureIndex)
+    {
+        if (GameState.SelectedCard is null) return;
+        GameState.HitFigure(GameState.SelectedCard.InstanceId, figureIndex);
+    }
+
+    private void Heal(int figureIndex)
+    {
+        if (GameState.SelectedCard is null) return;
+        GameState.HealFigure(GameState.SelectedCard.InstanceId, figureIndex);
+    }
+
+    private async Task DeleteUnit()
+    {
+        if (!CanDelete) return;
+        if (GameState.Army.Count <= 1)
+        {
+            await Js.InvokeVoidAsync("alert", "We can't remove your only squad.");
+            return;
+        }
+
+        GameState.DeleteSelected();
+    }
+
+    private async Task ConfirmNewGame()
+    {
+        var ok = await Js.InvokeAsync<bool>("confirm", "Starting a new game will lose all changes. Continue?");
+        if (!ok) return;
+        GameState.StartNewGame();
+        Nav.NavigateTo("/builder");
+    }
+
+    private void OnRoundsChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var rounds))
+        {
+            GameState.SetTotalRounds(rounds);
+        }
+    }
+
+    private void OnShowRoundsChanged(ChangeEventArgs e)
+    {
+        var show = e.Value is bool b
+            ? b
+            : string.Equals(e.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+        GameState.SetShowRounds(show);
+    }
+
+    public void Dispose() => GameState.Changed -= OnChanged;
+}

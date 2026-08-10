@@ -1,0 +1,52 @@
+@* Round tracker, glyphs reference, and score (SquadMaster10 GameControl). *@
+<div class="game-panel">
+    @if (ShowRounds)
+    {
+        <section class="panel-block rounds-block">
+            <h2>Game Round</h2>
+            <div class="rounds-row">
+                @for (var r = 1; r <= TotalRounds; r++)
+                {
+                    var round = r;
+                    <button type="button"
+                            class="round-marker @(CurrentRound == round ? "selected" : "")"
+                            @onclick="() => OnRound.InvokeAsync(round)">
+                        <span class="round-num">@round</span>
+                        @if (round < TotalRounds)
+                        {
+                            <span class="round-arrow">›</span>
+                        }
+                    </button>
+                }
+            </div>
+        </section>
+    }
+
+    <section class="panel-block glyphs-block">
+        <h2>Glyphs</h2>
+        <div class="glyphs-grid">
+            @foreach (var glyph in Glyphs)
+            {
+                <div class="glyph-item" title="@glyph.Description">
+                    <img src="@glyph.Image" alt="Glyph @glyph.EntryId" loading="lazy" />
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="panel-block score-block">
+        <h2>Score</h2>
+        <div class="score-value">@CurrentPoints / @TotalPoints</div>
+        <p class="score-hint">Alive units still award their full points.</p>
+    </section>
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<Glyph> Glyphs { get; set; } = [];
+    [Parameter] public bool ShowRounds { get; set; } = true;
+    [Parameter] public int TotalRounds { get; set; } = 10;
+    [Parameter] public int CurrentRound { get; set; } = 1;
+    [Parameter] public int CurrentPoints { get; set; }
+    [Parameter] public int TotalPoints { get; set; }
+    [Parameter] public EventCallback<int> OnRound { get; set; }
+}

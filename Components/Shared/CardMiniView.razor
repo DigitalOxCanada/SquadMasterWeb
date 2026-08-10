@@ -1,0 +1,25 @@
+@* Compact unit tile used on the army builder. *@
+<div class="card-mini @CssClass" @onclick="OnClick">
+    <div class="card-tilt card-mini-tilt"
+         data-card-tilt
+         data-tilt-max="10"
+         data-tilt-rest-rx="2"
+         data-tilt-rest-ry="-3">
+        <div class="card-tilt-face">
+            <img class="card-mini-thumb" src="@Hero.Thumb" alt="@Hero.Name" loading="lazy" />
+            <div class="card-tilt-glare" aria-hidden="true"></div>
+        </div>
+    </div>
+    <div class="card-mini-body">
+        <div class="card-mini-name">@Hero.Name</div>
+        <div class="card-mini-points">@Hero.Points PTS</div>
+        <div class="card-mini-stats">@Hero.StatsLine</div>
+        <div class="card-mini-meta">@Hero.Size · @Hero.Species</div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public HeroUnit Hero { get; set; } = default!;
+    [Parameter] public EventCallback OnClick { get; set; }
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+}
