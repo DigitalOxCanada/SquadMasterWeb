@@ -1,0 +1,18 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/_framework/*",
+      "/css/*",
+      "/js/*",
+      "/lib/*",
+      "/assets/*",
+      "/data/*",
+      "/*.{css,js,json,png,ico,jpg,jpeg,gif,svg,wasm,dat,blat,dll,pdb,br,gz,map,xml}"
+    ]
+  },
+  "mimeTypes": {
+    ".dat": "application/octet-stream",
+    ".blat": "application/octet-stream"
+  }
+}

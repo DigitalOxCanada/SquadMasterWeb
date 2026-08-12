@@ -8,16 +8,16 @@ namespace SquadMasterWeb.Services;
 /// </summary>
 public sealed class HeroDataService
 {
-    private readonly IWebHostEnvironment _env;
+    private readonly HttpClient _http;
     private readonly ILogger<HeroDataService> _logger;
     private readonly SemaphoreSlim _loadLock = new(1, 1);
 
     private IReadOnlyList<HeroUnit>? _heroes;
     private IReadOnlyList<Glyph>? _glyphs;
 
-    public HeroDataService(IWebHostEnvironment env, ILogger<HeroDataService> logger)
+    public HeroDataService(HttpClient http, ILogger<HeroDataService> logger)
     {
-        _env = env;
+        _http = http;
         _logger = logger;
     }
 
@@ -41,16 +41,7 @@ public sealed class HeroDataService
                 return;
             }
 
-            var path = Path.Combine(_env.WebRootPath, "data", "HeroScapeDB.xml");
-            if (!File.Exists(path))
-            {
-                _logger.LogError("HeroScape database not found at {Path}", path);
-                _heroes = [];
-                _glyphs = [];
-                return;
-            }
-
-            await using var stream = File.OpenRead(path);
+            await using var stream = await _http.GetStreamAsync("data/HeroScapeDB.xml", cancellationToken);
             var doc = await XDocument.LoadAsync(stream, LoadOptions.None, cancellationToken);
 
             var heroes = new List<HeroUnit>();
@@ -82,6 +73,12 @@ public sealed class HeroDataService
                 .ToList();
             _glyphs = glyphs;
             _logger.LogInformation("Loaded {HeroCount} heroes and {GlyphCount} glyphs", _heroes.Count, _glyphs.Count);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "HeroScape database could not be downloaded");
+            _heroes = [];
+            _glyphs = [];
         }
         finally
         {

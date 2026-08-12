@@ -1,31 +1,17 @@
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using SquadMasterWeb.Components;
 using SquadMasterWeb.Services;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebAssemblyHostBuilder.CreateDefault(args);
+builder.RootComponents.Add<App>("#app");
+builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
-
-// Catalog is shared; game state is per browser circuit/session.
-builder.Services.AddSingleton<HeroDataService>();
+builder.Services.AddScoped(_ => new HttpClient
+{
+    BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
+});
+builder.Services.AddScoped<HeroDataService>();
 builder.Services.AddScoped<GameStateService>();
 
-var app = builder.Build();
-
-// Warm the card catalog at startup so the first request is fast.
-_ = app.Services.GetRequiredService<HeroDataService>().EnsureLoadedAsync();
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    app.UseHsts();
-}
-
-app.UseHttpsRedirection();
-app.UseAntiforgery();
-
-app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
-
-app.Run();
+await builder.Build().RunAsync();

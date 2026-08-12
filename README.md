@@ -25,6 +25,29 @@ dotnet run
 
 Then open the URL shown in the console (typically `https://localhost:7xxx`).
 
+## Deploy (Azure Static Web Apps)
+
+Standalone **Blazor WebAssembly** — publish output is static files. Hosted on a **Free** Azure Static Web App in the **digitalox.ca** tenant (`542c6e72-9e01-4900-ac68-1b8a6b64e00e`). Sign in as `perry@digitalox.ca` before running Azure CLI.
+
+### One-time provision
+
+```powershell
+az login --tenant 542c6e72-9e01-4900-ac68-1b8a6b64e00e
+.\scripts\provision-azure.ps1 -SubscriptionId <subscription-id>
+```
+
+The script creates `rg-squadmaster` and Free SKU Static Web App `squadmaster-web`, then prints the GitHub secret.
+
+### GitHub secrets
+
+| Kind | Name | Where to get it |
+|------|------|-----------------|
+| Secret | `AZURE_STATIC_WEB_APPS_API_TOKEN` | SWA → **Manage deployment token**, or the provision script output |
+
+Workflow file: [`.github/workflows/azure-static-web-apps.yml`](.github/workflows/azure-static-web-apps.yml).
+
+Push to `main` (or **Run workflow**) publishes the WASM site. Pull requests get a preview environment.
+
 ## Project layout
 
 ```
@@ -47,6 +70,6 @@ This project is a non-commercial fan recreation, matching the spirit of the orig
 
 ## Tech
 
-- ASP.NET Core **Blazor Web App** (.NET 10)
-- Interactive Server render mode
+- **Blazor WebAssembly** (.NET 10), standalone static site
+- Azure Static Web Apps (Free)
 - Bootstrap 5 + custom tabletop theme
